@@ -1,0 +1,6 @@
+"0","#Regression model--useing centered variables for pretest and gender"
+"0",""
+"0","model <- lm(postRIT ~ treatment+centered_pretest+teacher1.c+teacher2.c+teacher3.c+teacher4.c+centered_gender, weights=Weight, data=Fenton)"
+"0",""
+"0","#Display table"
+"0","tidy(model) #First version in similar format to original"

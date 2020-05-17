@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1589681822021.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2247824185",
+    "id" : "4EF45ADA",
+    "lastKnownWriteTime" : 1589728355,
+    "last_content_update" : 1589728355375,
+    "path" : "~/GitHub/Storey_final_workflow/Storey_final_workflow/Storey_Workflow_final_final.Rmd",
+    "project_path" : "Storey_Workflow_final_final.Rmd",
+    "properties" : {
+        "chunk_output_type" : "inline",
+        "cursorPosition" : "178,0",
+        "scrollLine" : "177"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

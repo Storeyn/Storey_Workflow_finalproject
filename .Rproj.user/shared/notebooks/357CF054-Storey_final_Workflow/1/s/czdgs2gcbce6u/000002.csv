@@ -1,0 +1,8 @@
+"0","library(dplyr)"
+"0","#Alternate replication with correct format, but too many variables"
+"0","m1 <- lm(selfefficacy_post ~ treatment+selfefficacy_pre, weights=Weight, data=Fenton) #Math Self-Efficacy"
+"0","m2 <- lm(enjoyment_post ~ treatment+enjoyment_pre, weights=Weight, data=Fenton) #Math Enjoyment"
+"0","m3 <- lm(effort_post ~ treatment+effort_pre, weights=Weight, data=Fenton) #Math Effort"
+"0","m4 <- lm(answersense_post ~ treatment+answersense_pre, weights=Weight, data=Fenton) #Math Answers make sense"
+"0",""
+"0","tidy(m1)"

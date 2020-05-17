@@ -1,0 +1,229 @@
+---
+title: "Data Workflow Replication Project"
+author: "Nathan Storey"
+date: "5/13/2020"
+output: html_notebook
+---
+**Goal:** Replicate the results of Cook, et al. (2019). In this study, the rearchers conducted an evaluation of the ClassPace program, implemented in Fenton, Michigan schools. This replication will include an analysis of the missing data, a reproduction of the study student characteristics descriptive tables, a reproduction of the primary regression table depicting the association ClassPace enrollment and mathematics achievement, a reproduction of a table depicting a series of regression analyses of the associations between ClassPace enrollment and student survey subscales, and a reproduction of one figure graphing regression-adjusted means for each subscale for treatment and control groups. 
+
+
+
+# Create Analytic Dataset {-}
+## Import and Prepare Full Dataset {-}
+The dataset contains student-level data from survey responses regarding math attitudes, pre- and post-test standardized math scores, demographic data, grand-mean centered versions of the demographic data, and a weight variable due to propensity score matching.
+
+```{r}
+#Load libraries
+library(tidyverse)
+library(readxl)
+library(stargazer)
+library(knitr)
+library(kableExtra)
+library(broom)
+library(mice)
+
+#Import dataset from Excel
+setwd("~/GitHub/Storey_final_workflow/data")
+Fenton <- read_excel("Fenton all data.xlsx")
+
+#Keep variables: Treatment, Q2, ID, Q3_1, Q3_2, Q3_4, Q3_5, Q3_6, Q3_7, Q3_8 
+#Keep Q3_1_Post, Q2_Post, Q3_2_Post, Q3_4_Post, Q3_5_Post, Q3_6_Post, Q3_7_Post, Q3_8_Post,
+#Keep TestRitScore, Post_RIT_Score, Teacher1, Teacher2, Teacher3, Teacher4, Gender, non_white, Weight
+#Keep centered_pretest, centered_gender, centered_non_white, total_lessons_complete, class_score_percent
+#Rename to lowercase titles
+
+Fenton <- select(Fenton, "Treatment", "Q3_1", "Q3_2", "Q3_3", 
+                 "Q3_4", "Q3_5", "Q3_6", "Q3_7", "Q3_8", "Q3_1_Post", "Q3_2_Post", 
+                 "Q3_3_Post", "Q3_4_Post", "Q3_5_Post", "Q3_6_Post", "Q3_7_Post", 
+                 "Q3_8_Post", "TestRITScore", "Post_RIT_Score", "Teacher1", "Teacher2",
+                 "Teacher3", "Teacher4", "Gender", "non_white", "Weight", 
+                 "centered_pretest", "centered_gender", "centered_non_white", 
+                 "total_lessons_complete", "class_score_percent") %>% 
+  rename(treatment = "Treatment", female = "Gender", postRIT = "Post_RIT_Score", 
+         PreRIT = "TestRITScore", teacher1="Teacher1", teacher2 = "Teacher2", 
+         teacher3 = "Teacher3", teacher4 = "Teacher4")
+
+
+#Create summary/mean versions of survey wrap up variables?
+#Category1: Math self-efficacy--Q1-3, Q1-3_Post
+#Category2: Math enjoyment--Q5&6, 5&6_Post
+#Category3: Math effort--Q4&8, 4&8_Post
+#Category4: Math answers make sense--Q7, 7_Post
+Fenton <- mutate(Fenton, selfefficacy_pre = (Q3_1 + Q3_2 + Q3_3)/3)  
+Fenton <- mutate(Fenton, enjoyment_pre = (Q3_5+Q3_6)/2) 
+Fenton <- mutate(Fenton, effort_pre = (Q3_4 + Q3_8)/2) 
+Fenton <- mutate(Fenton, answersense_pre = Q3_7)
+Fenton <- mutate(Fenton, selfefficacy_post = (Q3_1_Post + Q3_2_Post + Q3_3_Post)/3)  
+Fenton <- mutate(Fenton, enjoyment_post = (Q3_5_Post + Q3_6_Post)/2) 
+Fenton <- mutate(Fenton, effort_post = (Q3_4_Post + Q3_8_Post)/2) 
+Fenton <- mutate(Fenton, answersense_post = Q3_7_Post)
+#Create grand-mean centered variables for subscale pretests
+Fenton <- mutate(Fenton, selfefficacy_pre.c = selfefficacy_pre - mean(selfefficacy_pre, na.rm=TRUE))
+Fenton <- mutate(Fenton, effort_pre.c = effort_pre - mean(effort_pre, na.rm=TRUE))                 
+Fenton <- mutate(Fenton, enjoyment_pre.c = enjoyment_pre - mean(enjoyment_pre, na.rm=TRUE))
+Fenton <- mutate(Fenton, answersense_pre.c = answersense_pre - mean(answersense_pre, na.rm=TRUE))
+#Create grand-mean centered variables of teacher dummy variables
+Fenton <- mutate(Fenton, teacher1.c = teacher1 - mean(teacher1, na.rm=TRUE))
+Fenton <- mutate(Fenton, teacher2.c = teacher2 - mean(teacher2, na.rm=TRUE))                 
+Fenton <- mutate(Fenton, teacher3.c = teacher3 - mean(teacher3, na.rm=TRUE))
+Fenton <- mutate(Fenton, teacher4.c = teacher4 - mean(teacher4, na.rm=TRUE))
+
+```
+# Descriptive Analysis
+## Replicate Table 1
+Below is a screenshot of Table 1 from Cook, et al., 2019.
+![Table 1](C:/Users/storn/Documents/Github/Storey_final_workflow/data/Table1.jpg)
+
+
+## Examine Table 1
+The researchers note that the comparison group had a higher percentage of females than the treatment group and the district. In addition, it is apparent that the treatment and control groups differ, particularly in the percentage of females in each. This led the team to use propensity score matching for their analysis.
+
+
+### Create Table 1
+Below is my replica of Table 1: Treatment and comparison student characteristics for analytic sample
+```{r}
+
+#Check for mssing data to determine where N for descriptive group comes from
+
+#library(mice) #Use mice library to check for missing variable patterns in variables related to surveys
+#md.pattern(select(Fenton, female, non_white, Q3_1, Q3_2, Q3_3, Q3_4, Q3_5, Q3_6, Q3_7, Q3_8, Q3_1_Post, Q3_2_Post, Q3_3_Post, Q3_4_Post, Q3_5_Post, Q3_6_Post, Q3_7_Post, Q3_8_Post, PreRIT, postRIT, teacher1, teacher2, teacher3, teacher4, total_lessons_complete, class_score_percent, enjoyment_pre, effort_post, answersense_post, selfefficacy_pre, female, non_white, Weight, centered_pretest, centered_gender, centered_non_white))
+
+#Create dataframe with mean values for Non-white and female variables
+df <- filter(Fenton, !is.na(treatment)) %>% 
+  group_by(treatment) %>%  
+  summarize(
+    `% Non-White` = mean(non_white, na.rm=TRUE)*100,#ignore NAs
+    `% Female` = mean(female, na.rm=TRUE)*100,
+    N=n()
+  ) %>% arrange(desc(treatment)) %>% select(-treatment) %>% t %>% as.data.frame #transpose axes
+
+#revise column names to match original
+colnames(df) <-c("Treatment", "Comparison")
+
+#Insert column District Avg with values
+df$`District Avg.` <- c("9.0", "49.4", "")
+
+#Knit table, caption from table
+knitr::kable(df, "html", booktabs = T, caption = "Treatment and comparison student characteristics for analytic sample (grades 3-5)") %>% 
+               kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+# Replicate Model
+Below is the model used in this study.
+$$
+#Code regression model
+\mathbf Final MAP Score_i = \\ Intercept + ClassPace~enrollment_i + Initial~MAP~score_i +\sum(teacher)_i + gender_i + e_i
+$$
+
+
+# Replicate Table 5
+Below is a screenshot of Table 5.
+![Table 5](C:/Users/storn/Documents/Github/Storey_final_workflow/data/Table5.jpg)
+
+## Examine Table 5
+The table does not depict the results from all variables in the model, above. The table includes a column showing significance, though it does not specify what thresholds are used for different numbers of asterisks. The only variable presented is the ClassPace enrollment variable, as well as the Intercept. The result for enrollment in ClassPace is negative, but not statistically significant. The covariates used in the model are grand-mean centered, and propensity scores were used. N is 188.
+
+### Create Table 5
+Below is my replication of Table 5: Association between ClassPace enrollment and mathematics achievement.
+```{r}
+#Regression model--useing centered variables for pretest and gender
+
+model <- lm(postRIT ~ treatment+centered_pretest+teacher1.c+teacher2.c+teacher3.c+teacher4.c+centered_gender, weights=Weight, data=Fenton)
+
+#Display table
+tidy(model) #First version in similar format to original
+
+#Second version with more similar information
+suppressWarnings(stargazer(model, type="text", covariate.labels=c("Intercept", "ClassPace"),
+                 omit=c("centered_pretest", "teacher1", "teacher2", "teacher3", "teacher4", "centered_gender"), #Omit variables not displayed in original table
+                 dep.var.labels="Mathematics Achievement",
+          omit.stat=c("rsq", "ser", "adj.rsq", "f"), #Omit statistics not in original table
+                 report=('csvp'), #Report coefficient, standard error, p-value
+                 na.rm=TRUE))
+                           
+
+
+```
+Note: All covariates were grand-mean centered, and propensity score weights were used.
+
+
+# Replicate Table 7 {-}
+Below is a screenshot of Table 7
+![Table 7](C:/Users/storn/Documents/Github/Storey_final_workflow/data/Table7.jpg)
+
+
+## Examine Table 7
+The table does not depict the results from all variables in the model, above. The table includes a column showing significance, though it does not specify what thresholds are used for different numbers of asterisks. All covariates were grand-mean centered, and propensity score weights were used.
+
+### Create Table 7: Associations between ClassPace enrollment and student survey statistics
+```{r}
+library(dplyr)
+
+#Run each subscale linear model regression, using just treatment and pretest on posttest results, include weight and centered pre-test variables
+
+m1 <- lm(selfefficacy_post ~ treatment.c+selfefficacy_pre.c, weights=Weight, data=Fenton) #Math Self-Efficacy
+m2 <- lm(enjoyment_post ~ treatment+enjoyment_pre.c, weights=Weight, data=Fenton) #Math Enjoyment
+m3 <- lm(effort_post ~ treatment+effort_pre.c, weights=Weight, data=Fenton) #Math Effort
+m4 <- lm(answersense_post ~ treatment+answersense_pre.c, weights=Weight, data=Fenton) #Math Answers make sense
+
+#create table
+suppressWarnings(stargazer(m1, m2, m3, m4, type="text", 
+          dep.var.labels=c("Math Self-Efficacy", "Math Enjoyment", "Math Effort", "Answers Make Sense"), 
+          omit=c("Intercept", "selfefficacy_pre", "enjoyment_pre", "effort_pre", "answersense_pre", "Constant"), #Labels for dependent variables akin to original table
+          report=('vcsp'), #report coeficient, standard deviation, p-value)
+          omit.stat = c("rsq", "adj.rsq", "ser", "f"), #omit statistics excluded from original table
+          covariate.labels=c("Estimate"), nobs = TRUE)) #Label as estimate to match table
+
+```
+
+# Replicate Figure 3
+Below is a screenshot of Figure 3: Regression-adjusted means for student survey subscales
+![Figure 3](C:/Users/storn/Documents/Github/Storey_final_workflow/data/Figure3.jpg)
+
+## Examine Figure 3
+From the mean results, we see that Math effort has the highest overall means for both treatment(ClassPace) and control (Comparison) groups. Each subscale reports both treatment and control means.
+
+### Create Figure 3: Regression-adjusted means for student survey subscales
+```{r}
+#library(mice) #Use mice library to check for missing variable patterns in variables related to surveys
+#md.pattern(select(Fenton, teacher1, selfefficacy_post, selfefficacy_pre, teacher2, teacher3, teacher4, centered_gender, Weight))
+
+#Put needed variables in new dataframe for survey analysis, filter for complete cases
+surveyFenton <- select(Fenton, treatment, selfefficacy_post, selfefficacy_pre, selfefficacy_pre.c, Weight, enjoyment_pre, enjoyment_pre.c, enjoyment_post, effort_pre, effort_pre.c, effort_post, answersense_pre, answersense_pre.c, answersense_post) %>% 
+                       filter(complete.cases(.))
+
+#Run linear models 
+ma <- lm(selfefficacy_post ~ treatment+selfefficacy_pre.c, weights=Weight, data=surveyFenton)
+mb <- lm(enjoyment_post ~ treatment+enjoyment_pre.c, weights=Weight, data=surveyFenton)
+mc <- lm(effort_post ~ treatment+effort_pre.c, weights=Weight, data=surveyFenton)
+md <- lm(answersense_post ~ treatment+answersense_pre.c, weights=Weight, data=surveyFenton)
+
+#Use linear models to predict regression adjusted values
+surveyFenton$selfefficacy_post_fit <- predict(ma)
+surveyFenton$enjoyment_post_fit <- predict(mb)
+surveyFenton$effort_post_fit <- predict(mc)
+surveyFenton$answersense_post_fit <- predict(md)
+
+#Calculate regression-adjusted means from individual values
+surveyFenton <- surveyFenton %>% 
+  group_by(treatment) %>% #summarize regression-adjusted mean values
+  summarize(
+    `Math Self-Efficacy` = mean(selfefficacy_post_fit, na.rm=TRUE),
+    `Math Enjoyment` = mean(enjoyment_post_fit, na.rm=TRUE),
+    `Math Effort` = mean(effort_post_fit, na.rm=TRUE),
+    `Math Answers Make Sense` = mean(answersense_post_fit, na.rm=TRUE),
+  ) %>% 
+  pivot_longer( #pivot means to longer format for graphing
+    c("Math Self-Efficacy", "Math Enjoyment", "Math Effort", "Math Answers Make Sense"),
+    names_to = "facet",
+    values_to = "y"
+  )
+
+#Plot graph
+ggplot(surveyFenton) +
+  geom_col(aes(x=treatment, y=y, fill=treatment))+
+  geom_text(aes(x=treatment, y=y, label=y),
+            position = position_stack(vjust = 1.2))+
+  facet_wrap(vars(facet)) #Face wrapping is closest possible to original format
+
+```
