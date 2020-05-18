@@ -110,11 +110,15 @@ knitr::kable(df, "html", booktabs = T, caption = "Treatment and comparison stude
 
 # Replicate Model
 Below is the model used in this study.
-$$
-#Code regression model
-\mathbf Final MAP Score_i = \\ Intercept + ClassPace~enrollment_i + Initial~MAP~score_i +\sum(teacher)_i + gender_i + e_i
-$$
+![Code](C:/Users/storn/Documents/Github/Storey_final_workflow/data/Code1.jpg)
 
+## Examine regression model
+The model examines the relationship between ClassPace enrollment and its effect on mathematics achievement (Final MAP score, through the standardized RIT assessment), and uses students' pre-test RIT score, gender(a dummy variable), and the sum of four teacher dummy variables (teacher1, teacher2, teacher3, teacher4). The authors have eliminated a few covariates (such as non-white, an ethnicity dummy variable), for the sake of parsimony.
+
+### Code regression model
+$$
+\mathbf Final~MAP~Score_i = \\ Intercept + ClassPace~enrollment_i + Initial~MAP~score_i +\sum(teacher)_i + gender_i + e_i
+$$
 
 # Replicate Table 5
 Below is a screenshot of Table 5.
@@ -161,7 +165,7 @@ library(dplyr)
 
 #Run each subscale linear model regression, using just treatment and pretest on posttest results, include weight and centered pre-test variables
 
-m1 <- lm(selfefficacy_post ~ treatment.c+selfefficacy_pre.c, weights=Weight, data=Fenton) #Math Self-Efficacy
+m1 <- lm(selfefficacy_post ~ treatment+selfefficacy_pre.c, weights=Weight, data=Fenton) #Math Self-Efficacy
 m2 <- lm(enjoyment_post ~ treatment+enjoyment_pre.c, weights=Weight, data=Fenton) #Math Enjoyment
 m3 <- lm(effort_post ~ treatment+effort_pre.c, weights=Weight, data=Fenton) #Math Effort
 m4 <- lm(answersense_post ~ treatment+answersense_pre.c, weights=Weight, data=Fenton) #Math Answers make sense

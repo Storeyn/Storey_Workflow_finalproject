@@ -5,16 +5,16 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "2247824185",
+    "hash" : "4120807440",
     "id" : "4EF45ADA",
-    "lastKnownWriteTime" : 1589728355,
-    "last_content_update" : 1589728355375,
+    "lastKnownWriteTime" : 1589763196,
+    "last_content_update" : 1589763196795,
     "path" : "~/GitHub/Storey_final_workflow/Storey_final_workflow/Storey_Workflow_final_final.Rmd",
     "project_path" : "Storey_Workflow_final_final.Rmd",
     "properties" : {
         "chunk_output_type" : "inline",
-        "cursorPosition" : "178,0",
-        "scrollLine" : "177"
+        "cursorPosition" : "167,38",
+        "scrollLine" : "161"
     },
     "read_only" : false,
     "read_only_alternatives" : [
